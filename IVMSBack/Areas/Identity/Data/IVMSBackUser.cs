@@ -26,5 +26,6 @@ namespace IVMSBack.Areas.Identity.Data
         public string Password { get; set; }
         [NotMapped]
         public string RoleID { get; set; }
+
     }
 }
