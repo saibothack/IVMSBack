@@ -1,41 +1,38 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
-using IVMSBack.Areas.Identity.Data;
-using IVMSBack.Models;
-using IVMSBackApi.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using IVMSBack.Areas.Identity.Data;
+using IVMSBack.Models;
+using Microsoft.AspNetCore.Identity;
+using IVMSBackApi.Models;
 using Newtonsoft.Json;
+using Microsoft.AspNetCore.Authorization;
 using DefaultData = IVMSBackApi.Models.DefaultData;
+using System.Security.Claims;
 
 namespace IVMSBackApi.Controllers
 {
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class IVMSBackUsersController : ControllerBase
+    public class DriversController : ControllerBase
     {
         private readonly IVMSBackContext _context;
         private readonly UserManager<IVMSBackUser> _userManager;
         private readonly RoleManager<IVMSBackRole> _roleManager;
         public IVMSBackUser CurrentUser { get; set; }
-        public string CurrentUserId { get; set; }
 
-        public IVMSBackUsersController(IVMSBackContext context,
+        public DriversController(IVMSBackContext context,
             UserManager<IVMSBackUser> userManager,
             RoleManager<IVMSBackRole> roleManager)
         {
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
-
-            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
         }
 
         // GET: api/IVMSBackUsers
@@ -49,19 +46,17 @@ namespace IVMSBackApi.Controllers
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
                 CurrentUser = await _userManager.FindByIdAsync(userId);
                 var CurrentUserRole = await _userManager.GetRolesAsync(CurrentUser);
-
-
+                
                 List<Filter> filtros;
                 var filters = HttpContext.Request.Query["filter"].ToString();
 
                 response.success = true;
                 response.data = new List<IVMSBackUser>();
-                
                 List<IVMSBackUser> records = new List<IVMSBackUser>();
-                var roles = await _roleManager.Roles.Where(x => x.Name != "Conductor" && x.DateEnd == null).ToListAsync();
-                foreach(var role in roles) {
-                    List<IVMSBackUser> users = new List<IVMSBackUser>();
 
+                foreach(var role in await _roleManager.Roles.Where(x => x.Name == "Conductor" && x.DateEnd == null).ToListAsync()) {
+                    List<IVMSBackUser> users = new List<IVMSBackUser>();
+                    
                     if (CurrentUserRole[0] == "Super Administrador") {
                         users = ((List<IVMSBackUser>) await _userManager.GetUsersInRoleAsync(role.Name)).Where(x => x.DateEnd == null).ToList();
                     } else {
@@ -80,10 +75,8 @@ namespace IVMSBackApi.Controllers
                                                                             .Where(x => x.DateEnd == null && usersFilter.Contains(x))
                                                                             .ToList();
                     }
-
-                    records.AddRange(users);
                 }
-                
+
                 if (!string.IsNullOrEmpty(filters))
                 {
                     filtros = JsonConvert.DeserializeObject<List<Filter>>(filters);

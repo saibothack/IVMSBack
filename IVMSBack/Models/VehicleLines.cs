@@ -5,9 +5,11 @@ namespace IVMSBack.Models
     public class VehicleLines : DefaultData
     {
         [ForeignKey("Vehicle")]
-        public string VehicleID { get; set; }
+        public int VehicleID { get; set; }
+        public Vehicle Vehicle { get; set; }
 
         [ForeignKey("Line")]
-        public string LineID { get; set; }
+        public int LineID { get; set; }
+        public Line Line { get; set; }
     }
 }

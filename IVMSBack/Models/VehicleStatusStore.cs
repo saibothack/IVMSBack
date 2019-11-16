@@ -5,9 +5,11 @@ namespace IVMSBack.Models
     public class VehicleStatusStore : DefaultData
     {
         [ForeignKey("Vehicle")]
-        public string VehicleID { get; set; }
+        public int VehicleID { get; set; }
+        public Vehicle Vehicle { get; set; }
 
         [ForeignKey("VehicleStatus")]
-        public string VehicleStatusID { get; set; }
+        public int VehicleStatusID { get; set; }
+        public VehicleStatus VehicleStatus { get; set; }
     }
 }

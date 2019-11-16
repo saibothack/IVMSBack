@@ -9,6 +9,9 @@ using IVMSBackApi.Models;
 using DefaultData = IVMSBackApi.Models.DefaultData;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using IVMSBack.Areas.Identity.Data;
+using Microsoft.AspNetCore.Identity;
 
 namespace IVMSBackApi.Controllers
 {
@@ -18,10 +21,20 @@ namespace IVMSBackApi.Controllers
     public class LinesController : ControllerBase
     {
         private readonly IVMSBackContext _context;
+        private readonly UserManager<IVMSBackUser> _userManager;
+        private readonly RoleManager<IVMSBackRole> _roleManager;
+        public IVMSBackUser CurrentUser { get; set; }
+        public string CurrentUserId { get; set; }
 
-        public LinesController(IVMSBackContext context)
+        public  LinesController(IVMSBackContext context,
+            UserManager<IVMSBackUser> userManager,
+            RoleManager<IVMSBackRole> roleManager)
         {
             _context = context;
+            _userManager = userManager;
+            _roleManager = roleManager;
+
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
         }
 
         // GET: api/Lines
@@ -32,12 +45,27 @@ namespace IVMSBackApi.Controllers
 
             try
             {
+                CurrentUser = await _userManager.FindByIdAsync(CurrentUserId);
+                var role = await _userManager.GetRolesAsync(CurrentUser);
+
                 List<Filter> filtros;
                 var filters = HttpContext.Request.Query["filter"].ToString();
 
                 response.success = true;
                 response.data = new List<Line>();
-                List<Line> records = await _context.Line.Where(x => x.DateEnd == null).ToListAsync();
+                List<Line> records = new List<Line>();
+
+                if (role[0] == "Super Administrador") {
+                    records = await _context.Line.Where(x => x.DateEnd == null).ToListAsync();
+                } else {
+                    var lines = (from a in (await _context.IVMSBackUserLines
+                                .Include(x => x.Line)
+                                .Where(x => x.IVMSBackUserID.Equals(CurrentUserId) && x.DateEnd == null && x.Line.DateEnd == null)
+                                .ToListAsync())
+                                select a.Line).ToList();
+
+                    if (lines.Count > 0) records = await _context.Line.Where(x => x.DateEnd == null && lines.Contains(x)).ToListAsync();
+                }
 
                 if (!string.IsNullOrEmpty(filters))
                 {
@@ -77,6 +105,9 @@ namespace IVMSBackApi.Controllers
                 return BadRequest();
             }
 
+            line.UserModified =  CurrentUserId;
+            line.DateModified = DateTime.Now;
+
             _context.Entry(line).State = EntityState.Modified;
 
             try
@@ -105,6 +136,9 @@ namespace IVMSBackApi.Controllers
         [HttpPost]
         public async Task<ActionResult<Line>> PostLine(Line line)
         {
+            line.UserCreate =  CurrentUserId;
+            line.DateCreate = DateTime.Now;
+            
             _context.Line.Add(line);
 
             try
@@ -138,6 +172,7 @@ namespace IVMSBackApi.Controllers
 
             Line line = _context.Line.Find(id);
 
+            line.UserEnd =  CurrentUserId;
             line.DateEnd = DateTime.Now;
 
             _context.Entry(line).State = EntityState.Modified;

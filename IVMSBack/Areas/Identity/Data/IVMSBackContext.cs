@@ -31,5 +31,6 @@ namespace IVMSBack.Models
         public DbSet<IVMSBackUserStatusStore> IVMSBackUserStatusStore { get; set; }
         public DbSet<VehicleStatus> VehicleStatus { get; set; }
         public DbSet<VehicleStatusStore> VehicleStatusStore { get; set; }
+        public DbSet<IVMSBackUserVehicles> IVMSBackUserVehicles { get; set; }
     }
 }

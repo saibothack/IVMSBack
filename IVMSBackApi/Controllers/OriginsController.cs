@@ -10,6 +10,9 @@ using IVMSBackApi.Models;
 using Newtonsoft.Json;
 using DefaultData = IVMSBackApi.Models.DefaultData;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using IVMSBack.Areas.Identity.Data;
+using System.Security.Claims;
 
 namespace IVMSBackApi.Controllers
 {
@@ -19,10 +22,20 @@ namespace IVMSBackApi.Controllers
     public class OriginsController : ControllerBase
     {
         private readonly IVMSBackContext _context;
+        private readonly UserManager<IVMSBackUser> _userManager;
+        private readonly RoleManager<IVMSBackRole> _roleManager;
+        public IVMSBackUser CurrentUser { get; set; }
+        public string CurrentUserId { get; set; }
 
-        public OriginsController(IVMSBackContext context)
+        public OriginsController(IVMSBackContext context,
+            UserManager<IVMSBackUser> userManager,
+            RoleManager<IVMSBackRole> roleManager)
         {
             _context = context;
+            _userManager = userManager;
+            _roleManager = roleManager;
+
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
         }
 
         // GET: api/Origins
@@ -71,6 +84,7 @@ namespace IVMSBackApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Super Administrador")]
         // PUT: api/Origins/5
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
@@ -81,6 +95,9 @@ namespace IVMSBackApi.Controllers
             {
                 return BadRequest();
             }
+
+            origin.UserModified =  CurrentUserId;
+            origin.DateModified = DateTime.Now;
 
             _context.Entry(origin).State = EntityState.Modified;
 
@@ -103,12 +120,17 @@ namespace IVMSBackApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Super Administrador")]
         // POST: api/Origins
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPost]
         public async Task<ActionResult<Origin>> PostOrigin(Origin origin)
         {
+
+            origin.UserCreate =  CurrentUserId;
+            origin.DateCreate = DateTime.Now;
+
             _context.Origin.Add(origin);
 
             try
@@ -130,6 +152,7 @@ namespace IVMSBackApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Super Administrador")]
         // DELETE: api/Origins/5
         [HttpDelete("{id}")]
         public async Task<ActionResult<Origin>> DeleteOrigin(int id)
@@ -141,7 +164,9 @@ namespace IVMSBackApi.Controllers
 
             Origin origin = _context.Origin.Find(id);
 
+            origin.UserEnd =  CurrentUserId;
             origin.DateEnd = DateTime.Now;
+            
 
             _context.Entry(origin).State = EntityState.Modified;
 

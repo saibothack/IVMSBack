@@ -11,6 +11,8 @@ using IVMSBackApi.Models;
 using Newtonsoft.Json;
 using DefaultData = IVMSBackApi.Models.DefaultData;
 using Microsoft.AspNetCore.Authorization;
+using IVMSBack.Areas.Identity.Data;
+using System.Security.Claims;
 
 namespace IVMSBackApi.Controllers
 {
@@ -20,14 +22,22 @@ namespace IVMSBackApi.Controllers
     public class IVMSBackRolesController : ControllerBase
     {
         private readonly IVMSBackContext _context;
+        private readonly UserManager<IVMSBackUser> _userManager;
         private readonly RoleManager<IVMSBackRole> _roleManager;
+        public IVMSBackUser CurrentUser { get; set; }
+        public string CurrentUserId { get; set; }
 
-        public IVMSBackRolesController(IVMSBackContext context, 
+        public IVMSBackRolesController(IVMSBackContext context,
+            UserManager<IVMSBackUser> userManager,
             RoleManager<IVMSBackRole> roleManager)
         {
             _context = context;
+            _userManager = userManager;
             _roleManager = roleManager;
+
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
         }
+
 
         // GET: api/IVMSBackRoles
         [HttpGet]
@@ -121,6 +131,9 @@ namespace IVMSBackApi.Controllers
                 IVMSBackRole role = await _roleManager.FindByIdAsync(id);
                 role.Name = iVMSBackRole.Name;
 
+                role.UserModified =  CurrentUserId;
+                role.DateModified = DateTime.Now;
+
                 var result = await _roleManager.UpdateAsync(role);
 
                 string errors = string.Empty;
@@ -174,6 +187,9 @@ namespace IVMSBackApi.Controllers
 
                 var role = new IVMSBackRole();
                 role.Name = iVMSBackRole.Name;
+                role.UserCreate =  CurrentUserId;
+                role.DateCreate = DateTime.Now;
+
                 await _roleManager.CreateAsync(role);
 
                 return Ok(new DefaultData
@@ -200,6 +216,7 @@ namespace IVMSBackApi.Controllers
 
                 IVMSBackRole role = await _roleManager.FindByIdAsync(id);
                 role.DateEnd = DateTime.Now;
+                role.UserModified =  CurrentUserId;
 
                 await _roleManager.UpdateAsync(role);
 

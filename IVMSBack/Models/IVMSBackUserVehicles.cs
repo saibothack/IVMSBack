@@ -3,14 +3,16 @@ using IVMSBack.Areas.Identity.Data;
 
 namespace IVMSBack.Models
 {
-    public class IVMSBackUserLines : DefaultData
+    public class IVMSBackUserVehicles : DefaultData
     {
         [ForeignKey("IVMSBackUser")]
         public string IVMSBackUserID { get; set; }
+
         public IVMSBackUser IVMSBackUser { get; set; }
 
-        [ForeignKey("Line")]
-        public int LineID { get; set; }
-        public Line Line { get; set; }
+        [ForeignKey("Vehicle")]
+        public int VehicleID { get; set; }
+
+        public Vehicle Vehicle { get; set; }
     }
 }

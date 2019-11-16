@@ -10,6 +10,9 @@ using IVMSBackApi.Models;
 using Newtonsoft.Json;
 using DefaultData = IVMSBackApi.Models.DefaultData;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using IVMSBack.Areas.Identity.Data;
+using System.Security.Claims;
 
 namespace IVMSBackApi.Controllers
 {
@@ -19,10 +22,20 @@ namespace IVMSBackApi.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly IVMSBackContext _context;
+        private readonly UserManager<IVMSBackUser> _userManager;
+        private readonly RoleManager<IVMSBackRole> _roleManager;
+        public IVMSBackUser CurrentUser { get; set; }
+        public string CurrentUserId { get; set; }
 
-        public ProductsController(IVMSBackContext context)
+        public ProductsController(IVMSBackContext context,
+            UserManager<IVMSBackUser> userManager,
+            RoleManager<IVMSBackRole> roleManager)
         {
             _context = context;
+            _userManager = userManager;
+            _roleManager = roleManager;
+
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
         }
 
         // GET: api/Products
@@ -71,6 +84,7 @@ namespace IVMSBackApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Super Administrador")]
         // PUT: api/Products/5
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
@@ -82,6 +96,8 @@ namespace IVMSBackApi.Controllers
                 return BadRequest();
             }
 
+            product.UserModified =  CurrentUserId;
+            product.DateModified = DateTime.Now;
             _context.Entry(product).State = EntityState.Modified;
 
             try
@@ -103,12 +119,15 @@ namespace IVMSBackApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Super Administrador")]
         // POST: api/Products
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPost]
         public async Task<ActionResult<Product>> PostProduct(Product product)
         {
+            product.UserCreate =  CurrentUserId;
+            product.DateCreate = DateTime.Now;
             _context.Product.Add(product);
 
             try
@@ -130,6 +149,7 @@ namespace IVMSBackApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Super Administrador")]
         // DELETE: api/Products/5
         [HttpDelete("{id}")]
         public async Task<ActionResult<Product>> DeleteProduct(int id)
@@ -141,7 +161,8 @@ namespace IVMSBackApi.Controllers
 
             Product product = _context.Product.Find(id);
 
-            product.DateEnd = DateTime.Now;
+            product.UserModified =  CurrentUserId;
+            product.DateModified = DateTime.Now;
 
             _context.Entry(product).State = EntityState.Modified;
 

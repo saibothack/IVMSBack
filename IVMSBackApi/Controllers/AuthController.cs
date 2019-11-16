@@ -12,6 +12,7 @@ using System.IdentityModel.Tokens.Jwt;
 using DefaultData = IVMSBackApi.Models.DefaultData;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.IdentityModel.Logging;
 
 namespace IVMSBackApi.Controllers
 {
@@ -95,6 +96,8 @@ namespace IVMSBackApi.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
                 new Claim(ClaimTypes.Role, user.Role.Name)
             };
+
+            IdentityModelEventSource.ShowPII = true;
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT:JwtKey"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
