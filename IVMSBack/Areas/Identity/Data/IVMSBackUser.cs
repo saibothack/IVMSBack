@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using IVMSBack.Models;
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -26,6 +27,7 @@ namespace IVMSBack.Areas.Identity.Data
         public string Password { get; set; }
         [NotMapped]
         public string RoleID { get; set; }
-
+        [NotMapped]
+        public IVMSBackRole Role { get; set; }
     }
 }

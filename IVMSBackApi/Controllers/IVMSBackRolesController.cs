@@ -10,9 +10,11 @@ using Microsoft.AspNetCore.Identity;
 using IVMSBackApi.Models;
 using Newtonsoft.Json;
 using DefaultData = IVMSBackApi.Models.DefaultData;
+using Microsoft.AspNetCore.Authorization;
 
 namespace IVMSBackApi.Controllers
 {
+    [Authorize(Roles = "Super Administrador")]
     [Route("api/[controller]")]
     [ApiController]
     public class IVMSBackRolesController : ControllerBase

@@ -3,11 +3,14 @@ using IVMSBack.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using System;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 
 namespace IVMSBackApi
@@ -24,13 +27,17 @@ namespace IVMSBackApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddCors();
+             /*services.AddCors();
             services.AddControllers();
 
             services.AddDbContext<IVMSBackContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("IVMSBackContextConnection")));
 
-            services.AddIdentity<IVMSBackUser, IVMSBackRole>()
+            services.AddDefaultIdentity<IVMSBackUser>()
+                .AddRoles<IVMSBackRole>()
+                .AddEntityFrameworkStores<IVMSBackContext>();
+
+           services.AddIdentity<IVMSBackUser, IVMSBackRole>()
                 .AddEntityFrameworkStores<IVMSBackContext>();
 
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -49,6 +56,48 @@ namespace IVMSBackApi
                         )
                     };
                 });
+
+                */
+
+            services.AddCors();
+            services.AddControllers();
+            
+            // ===== Add our DbContext ========
+            services.AddDbContext<IVMSBackContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("IVMSBackContextConnection")));
+            
+            // ===== Add Identity ========
+            services.AddIdentity<IVMSBackUser, IVMSBackRole>()
+                .AddEntityFrameworkStores<IVMSBackContext>()
+                .AddDefaultTokenProviders();
+                
+
+            // ===== Add Jwt Authentication ========
+            JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear(); // => remove default claims
+            services
+                .AddAuthentication(options =>
+                {
+                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                    
+                })
+                .AddJwtBearer(cfg =>
+                {
+                    cfg.RequireHttpsMetadata = false;
+                    cfg.SaveToken = true;
+                    cfg.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidIssuer = Configuration["JWT:JwtIssuer"],
+                        ValidAudience = Configuration["JWT:JwtIssuer"],
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT:JwtKey"])),
+                        ClockSkew = TimeSpan.Zero // remove delay of token when expire
+                    };
+                });
+
+            // ===== Add MVC ========
+            services.AddMvc();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

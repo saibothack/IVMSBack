@@ -14,11 +14,9 @@ namespace IVMSBack.Models
         public string Address { get; set; }
 
         [ScaffoldColumn(false)]
-        [Required(ErrorMessage = "La latitud es requerida")]
         public string Latitude { get; set; }
 
         [ScaffoldColumn(false)]
-        [Required(ErrorMessage = "La longitud es requerida")]
         public string Longitude { get; set; }
     }
 }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using IVMSBack.Areas.Identity.Data;
 using IVMSBack.Models;
 using IVMSBackApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -14,18 +15,22 @@ using DefaultData = IVMSBackApi.Models.DefaultData;
 
 namespace IVMSBackApi.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class IVMSBackUsersController : ControllerBase
     {
         private readonly IVMSBackContext _context;
         private readonly UserManager<IVMSBackUser> _userManager;
+        private readonly RoleManager<IVMSBackRole> _roleManager;
 
         public IVMSBackUsersController(IVMSBackContext context,
-            UserManager<IVMSBackUser> userManager)
+            UserManager<IVMSBackUser> userManager,
+            RoleManager<IVMSBackRole> roleManager)
         {
             _context = context;
             _userManager = userManager;
+            _roleManager = roleManager;
         }
 
         // GET: api/IVMSBackUsers
@@ -71,13 +76,7 @@ namespace IVMSBackApi.Controllers
             }
         }
 
-        // GET: api/IVMSBackUsers/5
-        [HttpGet("{id}", Name = "Get")]
-        public string Get(int id)
-        {
-            return "value";
-        }
-
+        [Authorize(Roles = "Super Administrador, Administrador")]
         // POST: api/IVMSBackUsers
         [HttpPost]
         public async Task<ActionResult<IVMSBackUser>> Post(IVMSBackUser iVMSBackUser)
@@ -119,6 +118,10 @@ namespace IVMSBackApi.Controllers
                     });
                 }
 
+                var role = await _roleManager.FindByIdAsync(iVMSBackUser.RoleID);
+                await _userManager.AddToRoleAsync(user, role.Name);
+                
+
                 return Ok(new DefaultData
                 {
                     success = true
@@ -129,17 +132,19 @@ namespace IVMSBackApi.Controllers
                 return BadRequest(new DefaultData
                 {
                     success = false,
-                    message = ex.Message
+                    message = ex.Message,
                 });
             }
         }
 
+        [Authorize(Roles = "Super Administrador, Administrador")]
         // PUT: api/IVMSBackUsers/5
         [HttpPut("{id}")]
         public void Put(int id, [FromBody] string value)
         {
         }
 
+        [Authorize(Roles = "Super Administrador, Administrador")]
         // DELETE: api/ApiWithActions/5
         [HttpDelete("{id}")]
         public void Delete(int id)

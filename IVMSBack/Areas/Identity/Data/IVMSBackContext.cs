@@ -27,7 +27,6 @@ namespace IVMSBack.Models
         public DbSet<VehicleLines> VehicleLines { get; set; }
         public DbSet<Origin> Origin { get; set; }
         public DbSet<Product> Product { get; set; }
-        public DbSet<ProductType> ProductType { get; set; }
         public DbSet<IVMSBackUserStatus> IVMSBackUserStatus { get; set; }
         public DbSet<IVMSBackUserStatusStore> IVMSBackUserStatusStore { get; set; }
         public DbSet<VehicleStatus> VehicleStatus { get; set; }

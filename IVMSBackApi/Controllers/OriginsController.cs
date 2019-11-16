@@ -1,32 +1,33 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using IVMSBack.Models;
 using IVMSBackApi.Models;
-using DefaultData = IVMSBackApi.Models.DefaultData;
 using Newtonsoft.Json;
+using DefaultData = IVMSBackApi.Models.DefaultData;
 using Microsoft.AspNetCore.Authorization;
 
 namespace IVMSBackApi.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Super Administrador, Administrador")]
     [Route("api/[controller]")]
     [ApiController]
-    public class LinesController : ControllerBase
+    public class OriginsController : ControllerBase
     {
         private readonly IVMSBackContext _context;
 
-        public LinesController(IVMSBackContext context)
+        public OriginsController(IVMSBackContext context)
         {
             _context = context;
         }
 
-        // GET: api/Lines
+        // GET: api/Origins
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Line>>> GetLine(int page, int start, int limit)
+        public async Task<ActionResult<IEnumerable<Origin>>> GetOrigin(int page, int start, int limit)
         {
             ResponseDefaultDataList response = new ResponseDefaultDataList();
 
@@ -36,8 +37,8 @@ namespace IVMSBackApi.Controllers
                 var filters = HttpContext.Request.Query["filter"].ToString();
 
                 response.success = true;
-                response.data = new List<Line>();
-                List<Line> records = await _context.Line.Where(x => x.DateEnd == null).ToListAsync();
+                response.data = new List<Origin>();
+                List<Origin> records = await _context.Origin.Where(x => x.DateEnd == null).ToListAsync();
 
                 if (!string.IsNullOrEmpty(filters))
                 {
@@ -49,7 +50,12 @@ namespace IVMSBackApi.Controllers
                             if (filtro.propiedad == "name")
                             {
                                 records = records.Where(x => x.Name.ToUpper().Contains(filtro.valor.ToUpper())).ToList();
-                            }
+                            } 
+
+                            if (filtro.propiedad == "address")
+                            {
+                                records = records.Where(x => x.Address.ToUpper().Contains(filtro.valor.ToUpper())).ToList();
+                            } 
                         }
                     }
                 }
@@ -65,19 +71,18 @@ namespace IVMSBackApi.Controllers
             }
         }
 
-        [Authorize(Roles = "Super Administrador, Administrador")]
-        // PUT: api/Lines/5
+        // PUT: api/Origins/5
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutLine(int id, Line line)
+        public async Task<IActionResult> PutOrigin(int id, Origin origin)
         {
-            if (id != line.Id)
+            if (id != origin.Id)
             {
                 return BadRequest();
             }
 
-            _context.Entry(line).State = EntityState.Modified;
+            _context.Entry(origin).State = EntityState.Modified;
 
             try
             {
@@ -98,14 +103,13 @@ namespace IVMSBackApi.Controllers
             }
         }
 
-        [Authorize(Roles = "Super Administrador, Administrador")]
-        // POST: api/Lines
+        // POST: api/Origins
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPost]
-        public async Task<ActionResult<Line>> PostLine(Line line)
+        public async Task<ActionResult<Origin>> PostOrigin(Origin origin)
         {
-            _context.Line.Add(line);
+            _context.Origin.Add(origin);
 
             try
             {
@@ -126,21 +130,20 @@ namespace IVMSBackApi.Controllers
             }
         }
 
-        [Authorize(Roles = "Super Administrador, Administrador")]
-        // DELETE: api/Lines/5
+        // DELETE: api/Origins/5
         [HttpDelete("{id}")]
-        public async Task<ActionResult<Line>> DeleteLine(int id)
+        public async Task<ActionResult<Origin>> DeleteOrigin(int id)
         {
             if (id == 0)
             {
                 return BadRequest();
             }
 
-            Line line = _context.Line.Find(id);
+            Origin origin = _context.Origin.Find(id);
 
-            line.DateEnd = DateTime.Now;
+            origin.DateEnd = DateTime.Now;
 
-            _context.Entry(line).State = EntityState.Modified;
+            _context.Entry(origin).State = EntityState.Modified;
 
             try
             {
