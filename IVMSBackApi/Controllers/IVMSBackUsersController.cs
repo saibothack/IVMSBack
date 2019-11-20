@@ -34,8 +34,6 @@ namespace IVMSBackApi.Controllers
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
-
-            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
         }
 
         // GET: api/IVMSBackUsers
@@ -46,6 +44,7 @@ namespace IVMSBackApi.Controllers
 
             try
             {
+                CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
                 CurrentUser = await _userManager.FindByIdAsync(userId);
                 var CurrentUserRole = await _userManager.GetRolesAsync(CurrentUser);
@@ -127,6 +126,8 @@ namespace IVMSBackApi.Controllers
                         message = "Su rol ya se encuentra dado de alta"
                     });
                 }
+
+                CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
                 var user = new IVMSBackUser();
                 user.Name = iVMSBackUser.Name;

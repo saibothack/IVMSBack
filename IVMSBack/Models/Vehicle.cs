@@ -32,6 +32,6 @@ namespace IVMSBack.Models
         public string User { get; set; }
 
         [NotMapped]
-        public int UserId { get; set; }
+        public string UserId { get; set; }
     }
 }

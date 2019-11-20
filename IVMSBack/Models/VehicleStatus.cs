@@ -8,5 +8,12 @@ namespace IVMSBack.Models
         [DisplayName("Nombre")]
         [Required(ErrorMessage = "El nombre es requerido")]
         public string Name { get; set; }
+
+        [DisplayName("Icono")]
+        public string Icon { get; set; }
+
+        [DisplayName("Color")]
+        [Required(ErrorMessage = "El color es requerido")]
+        public string Color { get; set; }
     }
 }

@@ -70,7 +70,7 @@ namespace IVMSBackApi.Controllers
                     {
                         success = false,
                         message = "Por favor verifique su usuario y password"
-                    });
+                    }); 
                 }
             }
             catch (Exception ex) {

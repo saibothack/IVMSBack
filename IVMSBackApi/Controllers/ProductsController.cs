@@ -34,8 +34,6 @@ namespace IVMSBackApi.Controllers
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
-
-            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
         }
 
         // GET: api/Products
@@ -46,6 +44,8 @@ namespace IVMSBackApi.Controllers
 
             try
             {
+                CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
                 List<Filter> filtros;
                 var filters = HttpContext.Request.Query["filter"].ToString();
 
@@ -96,6 +96,8 @@ namespace IVMSBackApi.Controllers
                 return BadRequest();
             }
 
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
             product.UserModified =  CurrentUserId;
             product.DateModified = DateTime.Now;
             _context.Entry(product).State = EntityState.Modified;
@@ -126,6 +128,8 @@ namespace IVMSBackApi.Controllers
         [HttpPost]
         public async Task<ActionResult<Product>> PostProduct(Product product)
         {
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
             product.UserCreate =  CurrentUserId;
             product.DateCreate = DateTime.Now;
             _context.Product.Add(product);
@@ -158,6 +162,8 @@ namespace IVMSBackApi.Controllers
             {
                 return BadRequest();
             }
+
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
             Product product = _context.Product.Find(id);
 

@@ -34,14 +34,15 @@ namespace IVMSBackApi.Controllers
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
-
-            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
         }
 
         // GET: api/Origins
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Origin>>> GetOrigin(int page, int start, int limit)
         {
+
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
             ResponseDefaultDataList response = new ResponseDefaultDataList();
 
             try
@@ -96,6 +97,8 @@ namespace IVMSBackApi.Controllers
                 return BadRequest();
             }
 
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
             origin.UserModified =  CurrentUserId;
             origin.DateModified = DateTime.Now;
 
@@ -127,6 +130,7 @@ namespace IVMSBackApi.Controllers
         [HttpPost]
         public async Task<ActionResult<Origin>> PostOrigin(Origin origin)
         {
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
             origin.UserCreate =  CurrentUserId;
             origin.DateCreate = DateTime.Now;
@@ -161,6 +165,8 @@ namespace IVMSBackApi.Controllers
             {
                 return BadRequest();
             }
+
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
             Origin origin = _context.Origin.Find(id);
 

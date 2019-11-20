@@ -34,8 +34,6 @@ namespace IVMSBackApi.Controllers
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
-
-            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
         }
 
         // GET: api/Vehicles
@@ -47,6 +45,8 @@ namespace IVMSBackApi.Controllers
 
             try
             {
+                CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
                 CurrentUser = await _userManager.FindByIdAsync(CurrentUserId);
                 var CurrentUserRole = await _userManager.GetRolesAsync(CurrentUser);
 
@@ -76,17 +76,32 @@ namespace IVMSBackApi.Controllers
                 }
 
                 foreach(var vehicle in records) {
-                    vehicle.Line = _context.VehicleLines.Where(x => x.DateEnd == null && x.VehicleID.Equals(vehicle.Id))
+                    var line = await _context.VehicleLines
                                     .Include(x => x.Line)
-                                    .FirstOrDefault().Line.Name;
+                                    .Where(x => x.DateEnd == null && x.VehicleID.Equals(vehicle.Id) && x.Line.DateEnd == null)
+                                    .FirstOrDefaultAsync();
 
-                    vehicle.VehicleStatus = _context.VehicleStatusStore.Where(x => x.DateEnd == null && x.VehicleID.Equals(vehicle.Id))
+                    if (line != null) {
+                        vehicle.Line = line.Line.Name;    
+                    }
+
+                    var status = await _context.VehicleStatusStore
                                     .Include(x => x.VehicleStatus)
-                                    .FirstOrDefault().VehicleStatus.Name;
+                                    .Where(x => x.DateEnd == null && x.VehicleID.Equals(vehicle.Id) && x.VehicleStatus.DateEnd == null)
+                                    .FirstOrDefaultAsync();
 
-                    vehicle.User = _context.IVMSBackUserVehicles.Where(x => x.DateEnd == null && x.VehicleID.Equals(vehicle.Id))
+                    if (status != null) {
+                        vehicle.VehicleStatus = status.VehicleStatus.Name;    
+                    }
+
+                    var user = await _context.IVMSBackUserVehicles
                                     .Include(x => x.IVMSBackUser)
-                                    .FirstOrDefault().IVMSBackUser.Name;
+                                    .Where(x => x.DateEnd == null && x.VehicleID.Equals(vehicle.Id))
+                                    .FirstOrDefaultAsync();
+
+                    if (user != null) {
+                        vehicle.User = user.IVMSBackUser.Name + " - " + user.IVMSBackUser.Email;
+                    }
                     
                 }
 
@@ -142,6 +157,8 @@ namespace IVMSBackApi.Controllers
                 });
             }
 
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
             vehicle.UserModified =  CurrentUserId;
             vehicle.DateModified = DateTime.Now;
 
@@ -159,7 +176,7 @@ namespace IVMSBackApi.Controllers
             catch (Exception ex)
             {
                 return BadRequest(new DefaultData
-                {
+                { 
                     success = false,
                     message = ex.Message
                 });
@@ -182,6 +199,8 @@ namespace IVMSBackApi.Controllers
                 });
             }
 
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
 
             vehicle.UserCreate =  CurrentUserId;
             vehicle.DateCreate = DateTime.Now;
@@ -190,6 +209,31 @@ namespace IVMSBackApi.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+
+                if (!string.IsNullOrEmpty(vehicle.UserId)) {
+                    var userVehicle = new IVMSBackUserVehicles();
+                    userVehicle.IVMSBackUserID = vehicle.UserId;
+                    userVehicle.VehicleID = vehicle.Id;
+                    userVehicle.UserCreate =  CurrentUserId;
+                    userVehicle.DateCreate = DateTime.Now;
+
+                    _context.Vehicle.Add(vehicle);
+                }
+
+                if (vehicle.LineID != 0) {
+                    var vehicleLine = new VehicleLines();
+                    vehicleLine.LineID = vehicle.LineID;
+                    vehicleLine.VehicleID = vehicle.Id;
+                    vehicleLine.UserCreate =  CurrentUserId;
+                    vehicleLine.DateCreate = DateTime.Now;
+                }
+
+                var vehicleStatus = new VehicleStatusStore();
+                vehicleStatus.VehicleID = vehicle.Id;
+                vehicleStatus.VehicleStatusID = 1;
+                vehicleStatus.UserCreate =  CurrentUserId;
+                vehicleStatus.DateCreate = DateTime.Now;
+
 
                 return Ok(new DefaultData
                 {
@@ -215,6 +259,8 @@ namespace IVMSBackApi.Controllers
             {
                 return BadRequest();
             }
+
+            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
             Vehicle vehicle = _context.Vehicle.Find(id);
 

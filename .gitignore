@@ -354,3 +354,5 @@ MigrationBackup/
 .ionide/
 
 IVMSBackApi/appsettings.json
+
+IVMSBackApi/Upload/

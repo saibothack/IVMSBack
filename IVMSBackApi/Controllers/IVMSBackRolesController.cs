@@ -34,8 +34,6 @@ namespace IVMSBackApi.Controllers
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
-
-            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
         }
 
 
@@ -47,6 +45,8 @@ namespace IVMSBackApi.Controllers
 
             try
             {
+                CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
                 List<Filter> filtros;
                 var filters = HttpContext.Request.Query["filter"].ToString();
 
@@ -90,6 +90,7 @@ namespace IVMSBackApi.Controllers
 
             try
             {
+                CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
                 response.success = true;
                 response.data = new List<IVMSBackRole>();
                 var noRole = await _roleManager.FindByNameAsync("Conductor");
@@ -127,6 +128,8 @@ namespace IVMSBackApi.Controllers
                         message = "Su rol ya se encuentra dado de alta"
                     });
                 }
+
+                CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
                 IVMSBackRole role = await _roleManager.FindByIdAsync(id);
                 role.Name = iVMSBackRole.Name;
@@ -185,6 +188,8 @@ namespace IVMSBackApi.Controllers
                     });
                 }
 
+                CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
                 var role = new IVMSBackRole();
                 role.Name = iVMSBackRole.Name;
                 role.UserCreate =  CurrentUserId;
@@ -214,9 +219,10 @@ namespace IVMSBackApi.Controllers
             try
             {
 
+                CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
                 IVMSBackRole role = await _roleManager.FindByIdAsync(id);
                 role.DateEnd = DateTime.Now;
-                role.UserModified =  CurrentUserId;
+                role.UserEnd =  CurrentUserId;
 
                 await _roleManager.UpdateAsync(role);
 

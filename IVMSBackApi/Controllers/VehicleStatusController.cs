@@ -1,71 +1,62 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using IVMSBack.Models;
-using IVMSBackApi.Models;
-using DefaultData = IVMSBackApi.Models.DefaultData;
-using Newtonsoft.Json;
-using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
-using IVMSBack.Areas.Identity.Data;
 using Microsoft.AspNetCore.Identity;
+using IVMSBack.Areas.Identity.Data;
+using Microsoft.AspNetCore.Authorization;
+using IVMSBackApi.Models;
+using System.Security.Claims;
+using Newtonsoft.Json;
+using DefaultData = IVMSBackApi.Models.DefaultData;
+using System.IO;
+using Microsoft.AspNetCore.Hosting;
+using System.Text.RegularExpressions;
 
 namespace IVMSBackApi.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class LinesController : ControllerBase
+    [Authorize(Roles = "Super Administrador, Administrador")]
+    public class VehicleStatusController : ControllerBase
     {
         private readonly IVMSBackContext _context;
+        private IWebHostEnvironment _environment;
         private readonly UserManager<IVMSBackUser> _userManager;
         private readonly RoleManager<IVMSBackRole> _roleManager;
         public IVMSBackUser CurrentUser { get; set; }
         public string CurrentUserId { get; set; }
 
-        public  LinesController(IVMSBackContext context,
+        public VehicleStatusController(IVMSBackContext context,
             UserManager<IVMSBackUser> userManager,
-            RoleManager<IVMSBackRole> roleManager)
+            RoleManager<IVMSBackRole> roleManager,
+            IWebHostEnvironment environment)
         {
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
+            _environment = environment;
         }
 
-        // GET: api/Lines
+        // GET: api/VehicleStatus
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Line>>> GetLine(int page, int start, int limit)
+        public async Task<ActionResult<IEnumerable<VehicleStatus>>> GetVehicleStatus(int page, int start, int limit)
         {
             ResponseDefaultDataList response = new ResponseDefaultDataList();
 
             try
             {
-                CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-                CurrentUser = await _userManager.FindByIdAsync(CurrentUserId);
-                var role = await _userManager.GetRolesAsync(CurrentUser);
-
                 List<Filter> filtros;
                 var filters = HttpContext.Request.Query["filter"].ToString();
 
                 response.success = true;
-                response.data = new List<Line>();
-                List<Line> records = new List<Line>();
-
-                if (role[0] == "Super Administrador") {
-                    records = await _context.Line.Where(x => x.DateEnd == null).ToListAsync();
-                } else {
-                    var lines = (from a in (await _context.IVMSBackUserLines
-                                .Include(x => x.Line)
-                                .Where(x => x.IVMSBackUserID.Equals(CurrentUserId) && x.DateEnd == null && x.Line.DateEnd == null)
-                                .ToListAsync())
-                                select a.Line).ToList();
-
-                    if (lines.Count > 0) records = await _context.Line.Where(x => x.DateEnd == null && lines.Contains(x)).ToListAsync();
-                }
-
+                response.data = new List<VehicleStatus>();
+                List<VehicleStatus> records = await _context.VehicleStatus.Where(x => x.DateEnd == null).ToListAsync();
+        
                 if (!string.IsNullOrEmpty(filters))
                 {
                     filtros = JsonConvert.DeserializeObject<List<Filter>>(filters);
@@ -92,23 +83,23 @@ namespace IVMSBackApi.Controllers
             }
         }
 
-        [Authorize(Roles = "Super Administrador, Administrador")]
-        // PUT: api/Lines/5
+        // PUT: api/VehicleStatus/5
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutLine(int id, Line line)
+        [Authorize(Roles = "Super Administrador")]
+        public async Task<IActionResult> PutVehicleStatus(int id, VehicleStatus vehicleStatus)
         {
-            if (id != line.Id)
+            if (id != vehicleStatus.Id)
             {
                 return BadRequest();
             }
 
             CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-            line.UserModified =  CurrentUserId;
-            line.DateModified = DateTime.Now;
+            vehicleStatus.UserModified =  CurrentUserId;
+            vehicleStatus.DateModified = DateTime.Now;
 
-            _context.Entry(line).State = EntityState.Modified;
+            _context.Entry(vehicleStatus).State = EntityState.Modified;
 
             try
             {
@@ -129,22 +120,39 @@ namespace IVMSBackApi.Controllers
             }
         }
 
-        [Authorize(Roles = "Super Administrador, Administrador")]
-        // POST: api/Lines
+        // POST: api/VehicleStatus
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPost]
-        public async Task<ActionResult<Line>> PostLine(Line line)
+        [Authorize(Roles = "Super Administrador")]
+        public async Task<ActionResult<VehicleStatus>> PostVehicleStatus(VehicleStatus vehicleStatus)
         {
-            CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-
-            line.UserCreate =  CurrentUserId;
-            line.DateCreate = DateTime.Now;
-            
-            _context.Line.Add(line);
-
             try
             {
+                CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+
+                if (!Directory.Exists(_environment.ContentRootPath + "/Upload"))
+                {
+                    Directory.CreateDirectory(_environment.ContentRootPath + "/Upload");
+                }
+
+                var file = Path.Combine(_environment.ContentRootPath, "Upload", "VehicleState" + DateTime.Now.Ticks + ".png");
+
+                var base64Data = Regex.Match(vehicleStatus.Icon, @"data:image/(?<type>.+?),(?<data>.+)").Groups["data"].Value;
+
+                var bytes = Convert.FromBase64String(base64Data);
+                using (var imageFile = new FileStream(file, FileMode.Create))
+                {
+                    imageFile.Write(bytes, 0, bytes.Length);
+                    imageFile.Flush();
+                }
+
+                vehicleStatus.UserCreate =  CurrentUserId;
+                vehicleStatus.DateCreate = DateTime.Now;
+                
+                _context.VehicleStatus.Add(vehicleStatus);
+
+            
                 await _context.SaveChangesAsync();
 
                 return Ok(new DefaultData
@@ -162,10 +170,10 @@ namespace IVMSBackApi.Controllers
             }
         }
 
-        [Authorize(Roles = "Super Administrador, Administrador")]
-        // DELETE: api/Lines/5
+        // DELETE: api/VehicleStatus/5
         [HttpDelete("{id}")]
-        public async Task<ActionResult<Line>> DeleteLine(int id)
+        [Authorize(Roles = "Super Administrador")]
+        public async Task<ActionResult<VehicleStatus>> DeleteVehicleStatus(int id)
         {
             if (id == 0)
             {
@@ -173,12 +181,12 @@ namespace IVMSBackApi.Controllers
             }
             CurrentUserId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
 
-            Line line = _context.Line.Find(id);
+            VehicleStatus vehicleStatus = _context.VehicleStatus.Find(id);
 
-            line.UserEnd =  CurrentUserId;
-            line.DateEnd = DateTime.Now;
+            vehicleStatus.UserEnd =  CurrentUserId;
+            vehicleStatus.DateEnd = DateTime.Now;
 
-            _context.Entry(line).State = EntityState.Modified;
+            _context.Entry(vehicleStatus).State = EntityState.Modified;
 
             try
             {
